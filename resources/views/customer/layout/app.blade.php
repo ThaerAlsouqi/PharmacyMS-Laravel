@@ -42,29 +42,59 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="medicinesDropdown">
                             <li><a class="dropdown-item" href="{{ route('medicines') }}">All Medicines</a></li>
-                            <li><a class="dropdown-item" href="#">Prescription Medicines</a></li>
-                            <li><a class="dropdown-item" href="#">Over-the-Counter</a></li>
-                            <li><a class="dropdown-item" href="#">Health Supplements</a></li>
+                            <li><a class="dropdown-item" href="{{ route('medicines', ['categories' => ['prescription']]) }}">Prescription Medicines</a></li>
+                            <li><a class="dropdown-item" href="{{ route('medicines', ['categories' => ['otc']]) }}">Over-the-Counter</a></li>
+                            <li><a class="dropdown-item" href="{{ route('medicines', ['categories' => ['vitamins']]) }}">Health Supplements</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('symptom-checker') ? 'active' : '' }}" href="{{ route('symptom-checker') }}">Symptom Checker</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('my-reservations') }}">My Reservations</a>
+                        <a class="nav-link {{ request()->routeIs('my-reservations') ? 'active' : '' }}" href="{{ route('my-reservations') }}">My Reservations</a>
                     </li>
                 </ul>
                 
                 <div class="d-flex align-items-center">
-                    <form class="d-flex me-2">
+                    <form class="d-flex me-2" action="{{ route('medicines') }}" method="GET">
                         <div class="input-group">
-                            <input class="form-control search-input" type="search" placeholder="Search medicines..." aria-label="Search">
+                            <input class="form-control search-input" type="search" name="search" 
+                                   placeholder="Search medicines..." aria-label="Search" 
+                                   value="{{ request('search') }}">
                             <button class="btn btn-purple" type="submit">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
                     </form>
-                    <a href="{{ route('contact') }}" class="btn btn-outline-purple ms-2">Contact Us</a>
+                    
+                    @guest('customer')
+                        <a href="{{ route('customer.login') }}" class="btn btn-outline-purple me-2">Login</a>
+                        <a href="{{ route('customer.register') }}" class="btn btn-purple">Sign Up</a>
+                    @else
+                        <div class="dropdown">
+                            <button class="btn btn-outline-purple dropdown-toggle" type="button" id="userDropdown" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user me-1"></i> {{ Auth::guard('customer')->user()->name }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="{{ route('my-reservations') }}">
+                                    <i class="fas fa-clipboard-list me-2"></i> My Reservations
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('customer.profile') }}">
+                                    <i class="fas fa-user-edit me-2"></i> Profile
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ route('customer.logout') }}" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    @endguest
                 </div>
             </div>
         </div>
