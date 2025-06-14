@@ -72,7 +72,14 @@ Route::middleware(['auth'])->prefix('admin')->group(function(){
     Route::put('backup/create', [BackupController::class,'create'])->name('backup.store');
     Route::get('backup/download/{file_name?}', [BackupController::class,'download'])->name('backup.download');
     Route::delete('backup/delete/{file_name?}', [BackupController::class,'destroy'])->where('file_name', '(.*)')->name('backup.destroy');
-
+    Route::prefix('demand-forecast')->name('demand-forecast.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\DemandForecastController::class, 'index'])->name('index');
+    Route::post('/predict', [App\Http\Controllers\Admin\DemandForecastController::class, 'predict'])->name('predict');
+    Route::post('/batch-predict', [App\Http\Controllers\Admin\DemandForecastController::class, 'batchPredict'])->name('batch-predict');
+    Route::get('/historical-sales', [App\Http\Controllers\Admin\DemandForecastController::class, 'getHistoricalSales'])->name('historical-sales');
+    Route::get('/history', [App\Http\Controllers\Admin\DemandForecastController::class, 'history'])->name('history');
+    Route::delete('/prediction/{prediction}', [App\Http\Controllers\Admin\DemandForecastController::class, 'deletePrediction'])->name('delete-prediction');
+    });
     Route::get('settings',[SettingController::class,'index'])->name('settings');
 });
 

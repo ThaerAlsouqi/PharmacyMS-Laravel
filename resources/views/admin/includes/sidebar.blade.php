@@ -81,7 +81,14 @@
                         <span>Barcodes</span>
                     </a>
                 </li>
-
+<!-- NEW: AI Demand Forecasting -->
+<li class="{{ route_is('demand-forecast.*') ? 'active' : '' }}" title="AI Demand Forecasting">
+    <a href="{{ route('demand-forecast.index') }}">
+        <i class="fas fa-brain"></i>
+        <span>AI Forecasting</span>
+        <span class="badge badge-success">AI</span>
+    </a>
+</li>
                 @can('view-supplier')
                     <li class="submenu {{ route_is('suppliers.*') ? 'active' : '' }}">
                         <a href="#"><i class="fe fe-user"></i> <span> Suppliers</span> <span
