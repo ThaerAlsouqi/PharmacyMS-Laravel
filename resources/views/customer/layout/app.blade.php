@@ -35,21 +35,13 @@
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">Home</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="medicinesDropdown" role="button" 
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            Medicines
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="medicinesDropdown">
-                            <li><a class="dropdown-item" href="{{ route('medicines') }}">All Medicines</a></li>
-                            <li><a class="dropdown-item" href="{{ route('medicines', ['categories' => ['prescription']]) }}">Prescription Medicines</a></li>
-                            <li><a class="dropdown-item" href="{{ route('medicines', ['categories' => ['otc']]) }}">Over-the-Counter</a></li>
-                            <li><a class="dropdown-item" href="{{ route('medicines', ['categories' => ['vitamins']]) }}">Health Supplements</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('medicines') ? 'active' : '' }}" href="{{ route('medicines') }}">Medicines</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('symptom-checker') ? 'active' : '' }}" href="{{ route('symptom-checker') }}">Symptom Checker</a>
                     </li>
+
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('my-reservations') ? 'active' : '' }}" href="{{ route('my-reservations') }}">My Reservations</a>
                     </li>

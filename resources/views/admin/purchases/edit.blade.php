@@ -137,6 +137,94 @@
 					</div>
 				</div>
 				
+<!-- Enhanced Barcode & Tracking Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="section-title mb-3">
+            <i class="fas fa-barcode mr-2 text-warning"></i>
+            Barcode & Tracking Information
+        </h5>
+    </div>
+</div>
+
+<div class="service-fields mb-3">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="form-group">
+                <label>Product Barcode</label>
+                <div class="barcode-input-container">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text scanner-icon" id="scanner-status">
+                                <i class="fas fa-barcode text-primary"></i>
+                            </span>
+                        </div>
+                        <input class="form-control barcode-scanner-input" 
+                               type="text" 
+                               name="barcode" 
+                               value="{{$purchase->barcode ?? ''}}"
+                               placeholder="Scan barcode or enter manually..." 
+                               id="barcode-input"
+                               autocomplete="off">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-success" onclick="generateBarcode()" title="Generate New Barcode">
+                                <i class="fas fa-magic mr-1"></i>Generate
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="clearBarcode()" title="Clear Barcode">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Scanner Status Indicator -->
+                    <div class="scanner-status-bar">
+                        <div class="status-indicator" id="scanner-indicator">
+                            <i class="fas fa-usb mr-2"></i>
+                            <span id="scanner-text">USB Scanner Ready - Just scan the barcode!</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <small class="form-text text-muted">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <strong>Supplier Barcode:</strong> Scan or enter the existing barcode from medicine packaging<br>
+                    <i class="fas fa-lightbulb mr-1"></i>
+                    <strong>No Barcode:</strong> Click "Generate" to create a new unique barcode
+                </small>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="form-group">
+                <label>Minimum Stock Alert</label>
+                <input class="form-control" type="number" name="minimum_stock" value="{{$purchase->minimum_stock ?? 5}}" placeholder="5" min="1">
+                <small class="form-text text-muted">
+                    <i class="fas fa-bell mr-1"></i>
+                    Get alerts when stock falls below this number
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Barcode Display -->
+    @if($purchase->barcode)
+    <div class="row">
+        <div class="col-12">
+            <div class="current-barcode-display">
+                <div class="current-barcode-header">
+                    <i class="fas fa-check-circle mr-2 text-success"></i>
+                    Current Barcode
+                </div>
+                <div class="current-barcode-content">
+                    <span class="current-barcode-value">{{$purchase->barcode}}</span>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+</div>
+
 				<div class="submit-section">
 					<button class="btn btn-success submit-btn" type="submit">
 						<i class="fas fa-save mr-2"></i>

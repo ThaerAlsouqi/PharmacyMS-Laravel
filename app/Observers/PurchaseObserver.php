@@ -6,13 +6,14 @@ use App\Models\Purchase;
 use App\Notifications\{ExpiredMedicineNotification, LowStockNotification};
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseObserver
 {
- public function created(Purchase $purchase)
+    public function created(Purchase $purchase)
     {
         $this->checkExpiry($purchase);
-        $this->checkLowStock($purchase); // New method
+        $this->checkLowStock($purchase);
     }
 
     public function updating(Purchase $purchase)
@@ -21,7 +22,7 @@ class PurchaseObserver
             $this->checkExpiry($purchase);
         }
         
-        if ($purchase->isDirty('quantity')) { // New check
+        if ($purchase->isDirty('quantity')) {
             $this->checkLowStock($purchase);
         }
     }
@@ -42,9 +43,8 @@ class PurchaseObserver
 
     protected function notifySuperAdmins(Purchase $purchase)
     {
-        // Get all users with super-admin role (role_id = 2)
         User::whereHas('roles', function($query) {
-                $query->where('id', 2); // super-admin has id=2 in your roles table
+                $query->where('id', 2);
             })
             ->chunk(100, function($admins) use ($purchase) {
                 foreach ($admins as $admin) {
@@ -56,7 +56,7 @@ class PurchaseObserver
     protected function sendNotification(User $admin, Purchase $purchase)
     {
         $notificationExists = $admin->notifications()
-            ->where('data->product_name', $purchase->medicine_name)
+            ->where('data->product_name', $purchase->product)
             ->where('data->title', 'Expired Product Alert')
             ->exists();
 
@@ -64,13 +64,15 @@ class PurchaseObserver
             $admin->notify(new ExpiredMedicineNotification($purchase));
         }
     }
-
-    // LowStockNotification
     
+    // LOW STOCK NOTIFICATION METHOD
     protected function checkLowStock(Purchase $purchase)
     {
         if ($purchase->quantity <= $purchase->minimum_stock) {
             $this->notifySuperAdminsLowStock($purchase);
+        } else {
+            // Stock is now above minimum - remove any existing low stock notifications
+            $this->removeExistingLowStockNotifications($purchase);
         }
     }
 
@@ -84,16 +86,35 @@ class PurchaseObserver
             });
     }
 
+    //  NO MORE DUPLICATES
     protected function sendLowStockNotification(User $admin, Purchase $purchase)
     {
-        $exists = $admin->notifications()
+        // Step 1: Remove ALL existing low stock notifications for this product
+        $admin->notifications()
             ->where('type', LowStockNotification::class)
             ->where('data->product_id', $purchase->id)
-            ->exists();
+            ->delete(); // Delete old notifications completely
 
-        if (!$exists) {
-            $admin->notify(new LowStockNotification($purchase));
-        }
+        // Step 2: Create fresh notification with current stock levels
+        $admin->notify(new LowStockNotification($purchase));
+        
+        // Optional: Log for debugging
+        Log::info("Low stock notification updated for {$purchase->product}: {$purchase->quantity} units left");
     }
-    
+
+    // Remove notifications when stock is restored
+    protected function removeExistingLowStockNotifications(Purchase $purchase)
+    {
+        User::whereHas('roles', fn($q) => $q->where('id', 2))
+            ->chunk(100, function($admins) use ($purchase) {
+                foreach ($admins as $admin) {
+                    $admin->notifications()
+                        ->where('type', LowStockNotification::class)
+                        ->where('data->product_id', $purchase->id)
+                        ->delete();
+                }
+            });
+            
+        Log::info("Low stock notifications cleared for {$purchase->product} - stock restored to {$purchase->quantity}");
+    }
 }

@@ -23,18 +23,18 @@ class LowStockNotification extends Notification implements ShouldQueue
         return ['database']; // Add 'mail' if you want to send email notifications
     }
 
-    public function toDatabase($notifiable)
-    {
-        return [
-            'title' => 'Low Stock Alert',
-            'product_id' => $this->purchase->id,
-            'product_name' => $this->purchase->medicine_name,
-            'quantity' => $this->purchase->quantity,
-            'minimum_stock' => $this->purchase->minimum_stock,
-            'image' => $this->purchase->image ?? null,
-            'message' => "{$this->purchase->medicine_name} is below minimum stock ({$this->purchase->quantity} remaining)"
-        ];
-    }
+public function toDatabase($notifiable)
+{
+    return [
+        'title' => 'Low Stock Alert',
+        'product_id' => $this->purchase->id,
+        'product_name' => $this->purchase->product, // Changed from medicine_name to product
+        'quantity' => $this->purchase->quantity,
+        'minimum_stock' => $this->purchase->minimum_stock,
+        'image' => $this->purchase->image ?? null,
+        'message' => "Only {$this->purchase->quantity} units left of {$this->purchase->product}. Minimum required: {$this->purchase->minimum_stock}"
+    ];
+}
 
     // public function toMail($notifiable) 
     // {

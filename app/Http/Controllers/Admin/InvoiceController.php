@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Sale;
 use App\Models\Product;
+use App\Models\Purchase; // Add this import
 use App\Services\BarcodeQrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceController extends Controller
 {
@@ -51,7 +53,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Store new invoice
+     * Store new invoice with STOCK DEDUCTION
      */
     public function store(Request $request)
     {
@@ -70,7 +72,23 @@ class InvoiceController extends Controller
 
         DB::beginTransaction();
         try {
-            // Calculate totals
+            // 🔍 STEP 1: Validate stock availability FIRST
+            foreach ($request->products as $item) {
+                $product = Product::with('purchase')->find($item['product_id']);
+                
+                if (!$product || !$product->purchase) {
+                    throw new \Exception("Product with ID {$item['product_id']} not found or has no purchase record.");
+                }
+                
+                $availableStock = $product->purchase->quantity;
+                $requestedQty = $item['quantity'];
+                
+                if ($availableStock < $requestedQty) {
+                    throw new \Exception("Insufficient stock for {$product->purchase->product}. Available: {$availableStock}, Requested: {$requestedQty}");
+                }
+            }
+
+            // 🧮 STEP 2: Calculate totals
             $subtotal = 0;
             $salesData = [];
 
@@ -90,7 +108,7 @@ class InvoiceController extends Controller
             $discountAmount = $request->discount_amount ?? 0;
             $totalAmount = $subtotal + $taxAmount - $discountAmount;
 
-            // Create invoice
+            // 📄 STEP 3: Create invoice
             $invoice = Invoice::create([
                 'invoice_number' => Invoice::generateInvoiceNumber(),
                 'subtotal' => $subtotal,
@@ -109,13 +127,25 @@ class InvoiceController extends Controller
                 'status' => ($request->ajax() || $request->wantsJson()) ? 'paid' : 'pending'
             ]);
 
-            // Create sales records
+            // 🛒 STEP 4: Create sales records AND deduct stock
             foreach ($salesData as $saleData) {
                 $saleData['invoice_id'] = $invoice->id;
                 Sale::create($saleData);
+
+                // 🔥 CRITICAL: Deduct stock from purchases table
+                $product = Product::with('purchase')->find($saleData['product_id']);
+                if ($product && $product->purchase) {
+                    $purchase = $product->purchase;
+                    $newQuantity = $purchase->quantity - $saleData['quantity'];
+                    
+                    // Update purchase quantity
+                    $purchase->update(['quantity' => max(0, $newQuantity)]);
+                    
+                    Log::info("Stock updated for {$purchase->product}: {$purchase->quantity} -> {$newQuantity}");
+                }
             }
 
-            // Generate QR code for invoice
+            // 📱 STEP 5: Generate QR code for invoice
             $qrData = [
                 'type' => 'invoice',
                 'invoice_number' => $invoice->invoice_number,
@@ -133,11 +163,11 @@ class InvoiceController extends Controller
 
             DB::commit();
 
-            // Check if request is from POS (AJAX/JSON)
+            // ✅ STEP 6: Return response
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Invoice created successfully!',
+                    'message' => 'Invoice created successfully! Stock has been updated.',
                     'invoice_number' => $invoice->invoice_number,
                     'invoice_id' => $invoice->id,
                     'total_amount' => $invoice->total_amount,
@@ -145,14 +175,14 @@ class InvoiceController extends Controller
                 ]);
             }
 
-            // Regular form submission (from manual invoice creation)
             return redirect()->route('admin.invoices.show', $invoice)
-                           ->with('success', 'Invoice created successfully!');
+                           ->with('success', 'Invoice created successfully! Stock has been updated.');
 
         } catch (\Exception $e) {
             DB::rollback();
             
-            // Handle JSON response for errors
+            Log::error('Invoice creation failed: ' . $e->getMessage());
+            
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,

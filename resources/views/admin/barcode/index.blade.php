@@ -222,7 +222,7 @@
 					</div>
 
 					<!-- Generate All QR Codes -->
-					<div class="action-card">
+					{{-- <div class="action-card">
 						<div class="action-title">
 							<i class="fas fa-qrcode" style="color: #28c76f;"></i>
 							Generate Product QR Codes
@@ -233,7 +233,7 @@
 						<button class="success-btn action-btn" onclick="generateAllQRCodes()">
 							<i class="fas fa-qrcode mr-2"></i>Generate All QR Codes
 						</button>
-					</div>
+					</div> --}}
 
 					<!-- Test Scanner -->
 					<div class="action-card">
@@ -250,7 +250,7 @@
 					</div>
 
 					<!-- Print Barcodes -->
-					<div class="action-card">
+					{{-- <div class="action-card">
 						<div class="action-title">
 							<i class="fas fa-print" style="color: #764ba2;"></i>
 							Print Barcode Labels
@@ -261,7 +261,7 @@
 						<a href="{{route('barcode.print')}}" class="action-btn" style="text-decoration: none; display: block; text-align: center;">
 							<i class="fas fa-print mr-2"></i>Print Labels
 						</a>
-					</div>
+					</div> --}}
 				</div>
 
 				<!-- Loading -->

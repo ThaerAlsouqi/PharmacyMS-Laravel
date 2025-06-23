@@ -69,17 +69,16 @@
                                             <h6 class="notification-title @if ($notification->data['title'] == 'Expired Product Alert') text-danger @else text-warning @endif">
                                                 {{ $notification->data['title'] }}
                                             </h6>
-                                            <p class="noti-details">
-                                                @if ($notification->data['title'] == 'Expired Product Alert')
-                                                    <span class="noti-title">{{ $notification->data['product_name'] }}
-                                                        has expired</span>
-                                                @else
-                                                    <span class="noti-title">
-                                                        {{ $notification->data['product_name'] }}
-                                                        ({{ $notification->data['quantity'] }}/{{ $notification->data['minimum_stock'] }})
-                                                    </span>
-                                                @endif
-                                            </p>
+<p class="noti-details">
+    @if ($notification->data['title'] == 'Expired Product Alert')
+        <span class="noti-title">{{ $notification->data['product_name'] }} has expired</span>
+    @else
+        <span class="noti-title">
+            {{ $notification->data['product_name'] }} 
+        </span>
+        <small class="d-block text-muted">Minimum required: {{ $notification->data['minimum_stock'] }}</small>
+    @endif
+</p>
                                             <p class="noti-time">
                                                 <span class="notification-time">{{ $notification->created_at->diffForHumans() }}</span>
                                             </p>
@@ -129,11 +128,11 @@
                 <a class="dropdown-item" href="{{ route('profile') }}">
                     <i class="fe fe-user mr-1"></i> My Profile
                 </a>
-                @can('view-settings')
+                {{-- @can('view-settings')
                     <a class="dropdown-item" href="{{ route('settings') }}">
                         <i class="fe fe-settings mr-1"></i> Settings
                     </a>
-                @endcan
+                @endcan --}}
                 <div class="dropdown-divider"></div>
                 <a href="javascript:void(0)" class="dropdown-item" onclick="document.getElementById('logout-form').submit();">
                     <i class="fe fe-log-out mr-1"></i> Logout

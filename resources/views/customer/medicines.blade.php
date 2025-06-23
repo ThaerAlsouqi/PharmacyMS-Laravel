@@ -154,14 +154,9 @@
                                         <h5 class="card-title">{{ $medicine->product }}</h5>
                                         <p class="card-text text-muted small">
                                             @if($medicine->expiry_date)
-                                                Expires: {{ $medicine->expiry_date->format('M Y') }}
+                                                Expires: {{ \Carbon\Carbon::parse($medicine->expiry_date)->format('M Y') }}
                                             @endif
                                         </p>
-                                        
-                                        <!-- Debug info (remove in production) -->
-                                        <small class="text-muted d-block mb-2">
-                                            Image Path: {{ $medicine->image ?? 'No image set' }}
-                                        </small>
                                         
                                         <div class="d-flex justify-content-between align-items-center mt-3">
                                             <h5 class="text-purple mb-0">
@@ -205,7 +200,6 @@
         </div>
     </section>
 
-    <!-- Rest of the modal code stays the same -->
     <!-- Reservation Modal -->
     <div class="modal fade" id="reservationModal" tabindex="-1" aria-labelledby="reservationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -246,7 +240,7 @@
                         <!-- Pharmacy Selection -->
                         <div class="mb-3">
                             <label class="form-label">Select Pharmacy:</label>
-                            <select class="form-select" name="pharmacy" required>
+                            <select class="form-select" name="pharmacy" id="pharmacy-select" required>
                                 <option value="">Choose a pharmacy</option>
                                 <option value="Main Street Pharmacy|123 Main St, Irbid|+962-798-030-585">
                                     Main Street Pharmacy - 123 Main St, Irbid
@@ -263,7 +257,7 @@
                         <!-- Special Instructions -->
                         <div class="mb-3">
                             <label class="form-label">Special Instructions (Optional):</label>
-                            <textarea class="form-control" name="notes" rows="3" 
+                            <textarea class="form-control" name="notes" id="notes-textarea" rows="3" 
                                       placeholder="Any special requests or notes..."></textarea>
                         </div>
 
@@ -332,8 +326,10 @@
                 document.getElementById('modal-medicine-price').textContent = currentMedicine.price.toFixed(2);
                 document.getElementById('modal-medicine-id').value = currentMedicine.id;
                 
-                // Reset quantity and calculate total
+                // Reset form
                 document.getElementById('medicine-quantity').value = 1;
+                document.getElementById('pharmacy-select').value = '';
+                document.getElementById('notes-textarea').value = '';
                 updateModalTotal();
                 
                 // Show modal
@@ -381,20 +377,36 @@
             const form = document.getElementById('reservationForm');
             const formData = new FormData(form);
             
+            // Validate required fields
+            const pharmacySelect = document.getElementById('pharmacy-select');
+            if (!pharmacySelect.value) {
+                showAlert('Please select a pharmacy', 'danger');
+                return;
+            }
+            
             // Parse pharmacy selection
-            const pharmacyData = formData.get('pharmacy').split('|');
+            const pharmacyData = pharmacySelect.value.split('|');
+            if (pharmacyData.length !== 3) {
+                showAlert('Invalid pharmacy selection', 'danger');
+                return;
+            }
             
             const reservationData = {
                 items: [{
-                    medicine_id: currentMedicine.id,
+                    medicine_id: parseInt(currentMedicine.id),
                     quantity: parseInt(formData.get('quantity'))
                 }],
                 pharmacy_name: pharmacyData[0],
                 pharmacy_address: pharmacyData[1],
                 pharmacy_phone: pharmacyData[2],
-                notes: formData.get('notes'),
+                notes: formData.get('notes') || '',
                 _token: '{{ csrf_token() }}'
             };
+            
+            // Disable submit button to prevent double submission
+            const submitBtn = document.getElementById('confirm-reservation');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating...';
             
             // Submit reservation
             fetch('{{ route("customer.reservations.store") }}', {
@@ -405,7 +417,12 @@
                 },
                 body: JSON.stringify(reservationData)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     // Close modal
@@ -413,26 +430,31 @@
                     modal.hide();
                     
                     // Show success message
-                    showAlert('Reservation created successfully!', 'success');
+                    showAlert('Reservation created successfully! Reservation #' + data.reservation_number, 'success');
                     
-                    // Optionally redirect to reservations page
+                    // Redirect to reservations page
                     setTimeout(() => {
-                        window.location.href = '{{ route("my-reservations") }}';
+                        window.location.href = '{{ route("customer.my-reservations") }}';
                     }, 2000);
                 } else {
-                    showAlert('Error creating reservation: ' + data.message, 'danger');
+                    showAlert('Error creating reservation: ' + (data.message || 'Unknown error'), 'danger');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 showAlert('Error creating reservation. Please try again.', 'danger');
+            })
+            .finally(() => {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Confirm Reservation';
             });
         }
         
         function showAlert(message, type) {
             const alert = document.createElement('div');
             alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
             alert.innerHTML = `
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>

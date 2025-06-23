@@ -66,8 +66,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/my-reservations', [ReservationController::class, 'index'])->name('my-reservations');
         Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store');
         Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])->name('reservations.show');
-        Route::patch('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
-        Route::post('/reservations/{reservation}/reorder', [ReservationController::class, 'reorder'])->name('reservations.reorder');
+    Route::post('/reservations/{id}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
+    Route::post('/reservations/{id}/reorder', [ReservationController::class, 'reorder'])->name('reservations.reorder');
     });
 });
 
@@ -86,6 +86,8 @@ Route::middleware(['auth:web'])->prefix('admin')->group(function(){
     // Route::get('notification',[NotificationController::class,'markAsRead'])->name('mark-as-read');
     // Route::get('notification-read',[NotificationController::class,'read'])->name('read');
     Route::get('profile',[UserController::class,'profile'])->name('profile');
+    // Add this inside your existing Route::middleware(['auth:web'])->prefix('admin')->group(function(){
+Route::post('purchases/validate-barcode', [PurchaseController::class, 'validateBarcode'])->name('purchases.validate-barcode');
     Route::post('profile/{user}',[UserController::class,'updateProfile'])->name('profile.update');
     Route::put('profile/update-password/{user}',[UserController::class,'updatePassword'])->name('update-password');
     Route::post('logout',[LogoutController::class,'index'])->name('logout');

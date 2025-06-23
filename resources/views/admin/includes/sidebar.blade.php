@@ -75,13 +75,17 @@
                         </ul>
                     </li>
                 @endcan
+                @can('view-barcodesM')
                 <li class="{{ route_is('barcode.*') ? 'active' : '' }}" title="Barcode Management">
                     <a href="{{ route('barcode.index') }}">
                         <i class="fas fa-barcode"></i>
                         <span>Barcodes</span>
                     </a>
                 </li>
+                @endcan
+
 <!-- NEW: AI Demand Forecasting -->
+@can('view-ai-forecasting')
 <li class="{{ route_is('demand-forecast.*') ? 'active' : '' }}" title="AI Demand Forecasting">
     <a href="{{ route('demand-forecast.index') }}">
         <i class="fas fa-brain"></i>
@@ -89,6 +93,7 @@
         <span class="badge badge-success">AI</span>
     </a>
 </li>
+@endcan
                 @can('view-supplier')
                     <li class="submenu {{ route_is('suppliers.*') ? 'active' : '' }}">
                         <a href="#"><i class="fe fe-user"></i> <span> Suppliers</span> <span

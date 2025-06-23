@@ -90,34 +90,71 @@ class PurchaseController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
-        $this->validate($request,[
-            'product'=>'required|max:200',
-            'category'=>'required',
-            'cost_price'=>'required|min:1',
-            'quantity'=>'required|min:1',
-            'expiry_date'=>'required',
-            'supplier'=>'required',
-            'image'=>'file|image|mimes:jpg,jpeg,png,gif',
-        ]);
-        $imageName = null;
-        if($request->hasFile('image')){
-            $imageName = time().'.'.$request->image->extension();
-            $request->image->move(public_path('storage/purchases'), $imageName);
-        }
-        Purchase::create([
-            'product'=>$request->product,
-            'category_id'=>$request->category,
-            'supplier_id'=>$request->supplier,
-            'cost_price'=>$request->cost_price,
-            'quantity'=>$request->quantity,
-            'expiry_date'=>$request->expiry_date,
-            'image'=>$imageName,
-        ]);
-        $notifications = notify("Purchase has been added");
-        return redirect()->route('purchases.index')->with($notifications);
+public function store(Request $request)
+{
+    $this->validate($request,[
+        'product'=>'required|max:200',
+        'category'=>'required',
+        'cost_price'=>'required|min:1',
+        'quantity'=>'required|min:1',
+        'expiry_date'=>'required',
+        'supplier'=>'required',
+        'image'=>'file|image|mimes:jpg,jpeg,png,gif',
+        'barcode'=>'nullable|string|max:50|unique:purchases,barcode',
+        'minimum_stock'=>'nullable|integer|min:1'
+    ]);
+
+    $imageName = null;
+    if($request->hasFile('image')){
+        $imageName = time().'.'.$request->image->extension();
+        $request->image->move(public_path('storage/purchases'), $imageName);
     }
+
+    // Handle barcode - if empty, auto-generate
+    $barcode = $request->barcode;
+    if (empty($barcode)) {
+        do {
+            $barcode = 'PHM' . str_pad(mt_rand(10000000, 99999999), 8, '0', STR_PAD_LEFT);
+        } while (Purchase::where('barcode', $barcode)->exists());
+    }
+
+    Purchase::create([
+        'product'=>$request->product,
+        'category_id'=>$request->category,
+        'supplier_id'=>$request->supplier,
+        'cost_price'=>$request->cost_price,
+        'quantity'=>$request->quantity,
+        'minimum_stock'=>$request->minimum_stock ?? 5,
+        'expiry_date'=>$request->expiry_date,
+        'image'=>$imageName,
+        'barcode'=>$barcode,
+    ]);
+
+    $notifications = notify("Purchase has been added with barcode: " . $barcode);
+    return redirect()->route('purchases.index')->with($notifications);
+}
+
+public function validateBarcode(Request $request)
+{
+    $barcode = $request->input('barcode');
+    
+    $validation = ['valid' => false, 'message' => ''];
+
+    if (strlen($barcode) < 4) {
+        $validation['message'] = 'Barcode too short (minimum 4 characters)';
+        return response()->json($validation);
+    }
+
+    if (Purchase::where('barcode', $barcode)->exists()) {
+        $validation['message'] = 'Barcode already exists in system';
+        return response()->json($validation);
+    }
+
+    $validation['valid'] = true;
+    $validation['message'] = 'Barcode is valid and available';
+    
+    return response()->json($validation);
+}
 
     
 
@@ -145,33 +182,50 @@ class PurchaseController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Purchase $purchase)
-    {
-        $this->validate($request,[
-            'product'=>'required|max:200',
-            'category'=>'required',
-            'cost_price'=>'required|min:1',
-            'quantity'=>'required|min:1',
-            'expiry_date'=>'required',
-            'supplier'=>'required',
-            'image'=>'file|image|mimes:jpg,jpeg,png,gif',
-        ]);
-        $imageName = $purchase->image;
-        if($request->hasFile('image')){
-            $imageName = time().'.'.$request->image->extension();
-            $request->image->move(public_path('storage/purchases'), $imageName);
-        }
-        $purchase->update([
-            'product'=>$request->product,
-            'category_id'=>$request->category,
-            'supplier_id'=>$request->supplier,
-            'cost_price'=>$request->cost_price,
-            'quantity'=>$request->quantity,
-            'expiry_date'=>$request->expiry_date,
-            'image'=>$imageName,
-        ]);
-        $notifications = notify("Purchase has been updated");
-        return redirect()->route('purchases.index')->with($notifications);
+{
+    $this->validate($request,[
+        'product'=>'required|max:200',
+        'category'=>'required',
+        'cost_price'=>'required|min:1',
+        'quantity'=>'required|min:1',
+        'expiry_date'=>'required',
+        'supplier'=>'required',
+        'image'=>'file|image|mimes:jpg,jpeg,png,gif',
+        'barcode'=>'nullable|string|max:50|unique:purchases,barcode,'.$purchase->id,
+        'minimum_stock'=>'nullable|integer|min:1'
+    ]);
+
+    $imageName = $purchase->image;
+    if($request->hasFile('image')){
+        $imageName = time().'.'.$request->image->extension();
+        $request->image->move(public_path('storage/purchases'), $imageName);
     }
+
+    // Handle barcode - if empty, auto-generate
+    $barcode = $request->barcode;
+    if (empty($barcode) && empty($purchase->barcode)) {
+        do {
+            $barcode = 'PHM' . str_pad(mt_rand(10000000, 99999999), 8, '0', STR_PAD_LEFT);
+        } while (Purchase::where('barcode', $barcode)->exists());
+    } else {
+        $barcode = $barcode ?: $purchase->barcode;
+    }
+
+    $purchase->update([
+        'product'=>$request->product,
+        'category_id'=>$request->category,
+        'supplier_id'=>$request->supplier,
+        'cost_price'=>$request->cost_price,
+        'quantity'=>$request->quantity,
+        'minimum_stock'=>$request->minimum_stock ?? $purchase->minimum_stock ?? 5,
+        'expiry_date'=>$request->expiry_date,
+        'image'=>$imageName,
+        'barcode'=>$barcode,
+    ]);
+
+    $notifications = notify("Purchase has been updated");
+    return redirect()->route('purchases.index')->with($notifications);
+}
 
     public function reports(){
         $title ='purchase reports';
