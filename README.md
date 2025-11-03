@@ -41,6 +41,7 @@ A comprehensive Laravel-based pharmacy management system for handling inventory,
    ```bash
    cp .env.example .env
    php artisan key:generate
+   php artisan storage:link
    ```
 
 5. **Configure Database**
